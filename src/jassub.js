@@ -150,6 +150,7 @@ export default class JASSUB extends EventTarget {
 
   // test support for WASM, ImageData, alphaBug, but only once, on init so it doesn't run when first running the page
   static _supportsWebAssembly = null
+  static _supportsSIMD = null
   static _hasAlphaBug = null
 
   static _test () {
@@ -177,12 +178,15 @@ export default class JASSUB extends EventTarget {
     }
 
     try {
-      if (typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function') {
-        const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00))
-        if (module instanceof WebAssembly.Module) JASSUB._supportsWebAssembly = (new WebAssembly.Instance(module) instanceof WebAssembly.Instance)
-      }
+      const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00))
+      if (module instanceof WebAssembly.Module) JASSUB._supportsWebAssembly = (new WebAssembly.Instance(module) instanceof WebAssembly.Instance)
     } catch (e) {
       JASSUB._supportsWebAssembly = false
+    }
+    try {
+      WebAssembly.validate(Uint8Array.of(0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11))
+    } catch (e) {
+      JASSUB._supportsSIMD = false
     }
 
     // Test for alpha bug, where e.g. WebKit can render a transparent pixel

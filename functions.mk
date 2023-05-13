@@ -34,6 +34,8 @@ define CONFIGURE_AUTO
 	  --host=x86-none-linux \
 	  --build=x86_64 \
 	  --enable-static \
+		--enable-optimize \
+		--enable-simd \
 	  --disable-shared \
 	  --disable-debug
 endef

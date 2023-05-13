@@ -193,8 +193,9 @@ const setIsPaused = isPaused => {
 const a = 'BT.601'
 const b = 'BT.709'
 const c = 'SMPTE240M'
+const d = 'FCC'
 
-const libassYCbCrMap = [a, a, a, a, a, b, b, c, c, 'FCC', 'FCC']
+const libassYCbCrMap = [a, a, a, a, a, b, b, c, c, d, d]
 
 const render = (time, force) => {
   const renderStartTime = performance.now()
@@ -289,9 +290,6 @@ const paintImages = ({ times, images, decodeStartTime, buffers }) => {
     }
     if (debug) {
       times.drawTime = performance.now() - drawStartTime
-      let total = 0
-      for (const key in times) total += times[key]
-      console.log('Bitmaps: ' + images.length + ' Total: ' + Math.round(total) + 'ms', times)
     }
     try {
       const image = offCanvas.transferToImageBitmap()

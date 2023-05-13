@@ -79,7 +79,7 @@ const float MAX_UINT8_CAST = 255.9 / 255;
 typedef struct RenderResult {
 public:
   int x, y, w, h;
-  uint32_t image;
+  size_t image;
   RenderResult *next;
 } RenderResult;
 
@@ -387,14 +387,14 @@ public:
         continue;
       }
       unsigned int datasize = sizeof(uint32_t) * w * h;
-      uint32_t *data = (uint32_t *)rawbuffer;
+      size_t *data = (size_t *)rawbuffer;
       decodeBitmap(alpha, data, img, w, h);
       RenderResult *result = (RenderResult *)(rawbuffer + datasize);
       result->w = w;
       result->h = h;
       result->x = img->dst_x;
       result->y = img->dst_y;
-      result->image = (uint32_t)data;
+      result->image = (size_t)data;
       result->next = NULL;
       if (tmp) {
         tmp->next = result;
@@ -406,7 +406,7 @@ public:
       ++count;
     }
   }
-  void decodeBitmap(double alpha, uint32_t *data, ASS_Image *img, int w, int h) {
+  void decodeBitmap(double alpha, size_t *data, ASS_Image *img, int w, int h) {
     uint32_t color = ((img->color << 8) & 0xff0000) | ((img->color >> 8) & 0xff00) | ((img->color >> 24) & 0xff);
     uint8_t *pos = img->bitmap;
     uint32_t res = 0;
@@ -678,7 +678,7 @@ public:
     storage->next.y = rect.min_y;
     storage->next.w = width;
     storage->next.h = height;
-    storage->next.image = (uint32_t)result;
+    storage->next.image = (size_t)result;
 
     return &storage->next;
   }

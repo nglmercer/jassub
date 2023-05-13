@@ -3,6 +3,18 @@
 # make - Build Dependencies and the JASSUB.js
 BASE_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 DIST_DIR:=$(BASE_DIR)dist/libraries
+SIMD_ARGS = \
+	-msimd128 \
+	-msse \
+	-msse2 \
+	-msse3 \
+	-mssse3 \
+	-msse4 \
+	-msse4.1 \
+	-msse4.2 \
+	-mavx \
+	-mavx2 \
+	-mbulk-memory -matomics -mnontrapping-fptoint $(SIMD_ARGS)
 
 export CFLAGS = -O3 -flto -s USE_PTHREADS=0 -fno-rtti -fno-exceptions
 export CXXFLAGS = $(CFLAGS)
@@ -127,8 +139,8 @@ build/lib/libass/configured: lib/libass
 $(DIST_DIR)/lib/libass.a: $(DIST_DIR)/lib/libfontconfig.a $(DIST_DIR)/lib/libharfbuzz.a $(DIST_DIR)/lib/libexpat.a $(DIST_DIR)/lib/libfribidi.a $(DIST_DIR)/lib/libfreetype.a $(DIST_DIR)/lib/libbrotlidec.a build/lib/libass/configured
 	cd build/lib/libass && \
 	$(call CONFIGURE_AUTO,../../../lib/libass) \
-		--disable-asm \
 		--enable-fontconfig \
+		--enable-large-tiles \
 	&& \
 	$(JSO_MAKE) install
 
@@ -161,23 +173,17 @@ EMCC_COMMON_ARGS = \
 	-s EXPORTED_FUNCTIONS="['_malloc']" \
 	-s MINIMAL_RUNTIME=1 \
 	-s MINIMAL_RUNTIME_STREAMING_WASM_INSTANTIATION=1 \
-	-s POLYFILL=0 \
 	-s BINARYEN_EXTRA_PASSES=--one-caller-inline-max-function-size=19306 \
 	-s INCOMING_MODULE_JS_API="[]" \
 	--no-heap-copy \
 	-flto \
 	-fno-exceptions \
 	-o $@
-	# -s STRICT=1 \
-	#--js-opts 0 -O0 -gsource-map 
-	#--js-opts 0 -O0 -g3 
 	#--closure 1 \
 	#-s USE_CLOSURE_COMPILER=1 \
-	#-s IGNORE_CLOSURE_COMPILER_ERRORS=1 \
-	#--memory-init-file 0
+	#-s IGNORE_CLOSURE_COMPILER_ERRORS=1 
 
-
-dist: $(OCTP_DEPS) dist/js/jassub-worker.js dist/js/jassub-worker-legacy.js dist/js/jassub.js
+dist: $(OCTP_DEPS) dist/js/jassub-worker.js dist/js/jassub-worker-debug.js dist/js/jassub-worker-legacy.js dist/js/jassub.js
 
 dist/js/jassub-worker.js: src/JASSUB.cpp src/worker.js src/polyfill.js
 	mkdir -p dist/js
@@ -185,7 +191,18 @@ dist/js/jassub-worker.js: src/JASSUB.cpp src/worker.js src/polyfill.js
 		--pre-js src/polyfill.js \
 		--pre-js src/worker.js \
 		-O3 \
-		-s EVAL_CTORS=2 \
+		${SIMD_ARGS} \
+		-s POLYFILL=0 \
+		-s TEXTDECODER=2 \
+		-s WASM=1 \
+		$(EMCC_COMMON_ARGS)
+
+dist/js/jassub-worker-debug.js: src/JASSUB.cpp src/worker.js src/polyfill.js
+	mkdir -p dist/js
+	emcc -g src/JASSUB.cpp $(OCTP_DEPS) \
+		--pre-js src/polyfill.js \
+		--pre-js src/worker.js \
+		-s POLYFILL=0 \
 		-s TEXTDECODER=2 \
 		-s WASM=1 \
 		$(EMCC_COMMON_ARGS)
@@ -195,11 +212,9 @@ dist/js/jassub-worker-legacy.js: src/JASSUB.cpp src/worker.js src/polyfill.js
 	emcc src/JASSUB.cpp $(OCTP_DEPS) \
 		--pre-js src/polyfill.js \
 		--pre-js src/worker.js \
-		-s WASM=0 \
-		--memory-init-file 0 \
+		-s WASM=2 \
 		-O3 \
 		--closure=0 \
-		-s LEGACY_VM_SUPPORT=1 \
 		-s MIN_CHROME_VERSION=27 \
 		-s MIN_SAFARI_VERSION=60005 \
 		$(EMCC_COMMON_ARGS)
