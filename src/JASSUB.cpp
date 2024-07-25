@@ -94,6 +94,152 @@ struct RenderBlendStorage {
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
+const char fontconf[] = "<?xml version=\"1.0\"?>\n"
+"<!DOCTYPE fontconfig SYSTEM \"fonts.dtd\">\n"
+"<fontconfig>\n"
+"	<dir>/fonts</dir>\n"
+"	<match target=\"pattern\">\n"
+"		<test qual=\"any\" name=\"family\">\n"
+"			<string>mono</string>\n"
+"		</test>\n"
+"		<edit name=\"family\" mode=\"assign\" binding=\"same\">\n"
+"			<string>monospace</string>\n"
+"		</edit>\n"
+"	</match>\n"
+"	<match target=\"pattern\">\n"
+"		<test qual=\"any\" name=\"family\">\n"
+"			<string>sans serif</string>\n"
+"		</test>\n"
+"		<edit name=\"family\" mode=\"assign\" binding=\"same\">\n"
+"			<string>sans-serif</string>\n"
+"		</edit>\n"
+"	</match>\n"
+"	<match target=\"pattern\">\n"
+"		<test qual=\"any\" name=\"family\">\n"
+"			<string>sans</string>\n"
+"		</test>\n"
+"		<edit name=\"family\" mode=\"assign\" binding=\"same\">\n"
+"			<string>sans-serif</string>\n"
+"		</edit>\n"
+"	</match>\n"
+"	<cachedir>/fontconfig</cachedir>\n"
+"	<config>\n"
+"		<rescan>\n"
+"			<int>30</int>\n"
+"		</rescan>\n"
+"	</config>\n"
+"</fontconfig>";
+
+struct font_constructors font_constructors_mem[] = {{ASS_FONTPROVIDER_FONTCONFIG, &ass_fontconfig_add_provider_mem, "fontconfig"}};
+
+ASS_FontProvider *ass_fontconfig_add_provider_mem(ASS_Library *lib, ASS_FontSelector *selector, const char *config, FT_Library ftlib) {
+  int rc;
+  ProviderPrivate *fc = NULL;
+  ASS_FontProvider *provider = NULL;
+
+  fc = calloc(1, sizeof(ProviderPrivate));
+  if (fc == NULL)
+    return NULL;
+
+  // build and load fontconfig configuration
+  fc->config = FcConfigCreate();
+  rc = FcConfigParseAndLoadFromMemory(fc->config, (unsigned char *)fontconf, FcTrue);
+  if (!rc) {
+    ass_msg(lib, MSGL_WARN,
+            "No usable fontconfig configuration "
+            "file found, using fallback.");
+    FcConfigDestroy(fc->config);
+    fc->config = FcInitLoadConfig();
+  }
+  if (fc->config)
+    rc = FcConfigBuildFonts(fc->config);
+
+  if (!rc || !fc->config) {
+    ass_msg(lib, MSGL_FATAL, "No valid fontconfig configuration found!");
+    FcConfigDestroy(fc->config);
+    free(fc);
+    return NULL;
+  }
+
+  // create font provider
+  provider = ass_font_provider_new(selector, &fontconfig_callbacks, fc);
+
+  // build database from system fonts
+  scan_fonts(fc->config, provider);
+
+  return provider;
+}
+
+void ass_set_fonts_memory(ASS_Renderer *priv, const char *default_font, const char *default_family, int dfp, const char *config, int update) {
+  free(priv->settings.default_font);
+  free(priv->settings.default_family);
+  priv->settings.default_font = default_font ? strdup(default_font) : 0;
+  priv->settings.default_family = default_family ? strdup(default_family) : 0;
+
+  ass_reconfigure(priv);
+
+  ass_cache_empty(priv->cache.font_cache);
+  ass_cache_empty(priv->cache.metrics_cache);
+
+  if (priv->fontselect)
+    ass_fontselect_free(priv->fontselect);
+  priv->fontselect = ass_fontselect_init_memory(priv->library, priv->ftlibrary, &priv->num_emfonts, default_family, default_font, config, dfp);
+}
+
+ASS_FontSelector *ass_fontselect_init_memory(ASS_Library *library, FT_Library ftlibrary, size_t *num_emfonts, const char *family, const char *path, const char *config, ASS_DefaultFontProvider dfp) {
+  ASS_FontSelector *priv = calloc(1, sizeof(ASS_FontSelector));
+  if (priv == NULL)
+    return NULL;
+
+  priv->library = library;
+  priv->ftlibrary = ftlibrary;
+  priv->uid = 1;
+  priv->family_default = family ? strdup(family) : NULL;
+  priv->path_default = path ? strdup(path) : NULL;
+  priv->index_default = 0;
+
+  if (family && !priv->family_default)
+    goto fail;
+  if (path && !priv->path_default)
+    goto fail;
+
+  priv->embedded_provider = ass_embedded_fonts_add_provider(priv, num_emfonts);
+
+  if (priv->embedded_provider == NULL) {
+    ass_msg(library, MSGL_WARN, "failed to create embedded font provider");
+    goto fail;
+  }
+
+  if (dfp >= ASS_FONTPROVIDER_AUTODETECT) {
+    for (int i = 0; font_constructors_mem[i].constructor; i++)
+      if (dfp == font_constructors_mem[i].id || dfp == ASS_FONTPROVIDER_AUTODETECT) {
+        priv->default_provider = font_constructors_mem[i].constructor(library, priv, config, ftlibrary);
+        if (priv->default_provider) {
+          ass_msg(library, MSGL_INFO, "Using font provider %s", font_constructors_mem[i].name);
+          break;
+        }
+      }
+
+    if (!priv->default_provider)
+      ass_msg(library, MSGL_WARN, "can't find selected font provider");
+  }
+
+  return priv;
+
+fail:
+  if (priv->default_provider)
+    ass_font_provider_free(priv->default_provider);
+  if (priv->embedded_provider)
+    ass_font_provider_free(priv->embedded_provider);
+
+  free(priv->family_default);
+  free(priv->path_default);
+
+  free(priv);
+
+  return NULL;
+}
+
 class BoundingBox {
 public:
   int min_x, max_x, min_y, max_y;
@@ -387,10 +533,12 @@ public:
     }
     for (RenderResult *tmp = renderResult; img; img = img->next) {
       int w = img->w, h = img->h;
-      if (w == 0 || h == 0) continue;
+      if (w == 0 || h == 0)
+        continue;
 
       double alpha = (255 - (img->color & 255)) / 255.0;
-      if (alpha == 0.0) continue;
+      if (alpha == 0.0)
+        continue;
 
       unsigned int datasize = sizeof(uint32_t) * w * h;
       size_t *data = (size_t *)rawbuffer;
@@ -434,9 +582,11 @@ public:
     count = 0;
 
     ASS_Image *imgs = ass_render_frame(ass_renderer, track, (int)(tm * 1000), &changed);
-    if (imgs == NULL || (changed == 0 && !force)) return NULL;
+    if (imgs == NULL || (changed == 0 && !force))
+      return NULL;
 
-    if (debug) time = emscripten_get_now();
+    if (debug)
+      time = emscripten_get_now();
 
     return processImages(imgs);
   }
@@ -449,7 +599,7 @@ public:
   }
 
   void reloadFonts() {
-    ass_set_fonts(ass_renderer, NULL, m_defaultFont, ASS_FONTPROVIDER_NONE, NULL, 1);
+    ass_set_fonts_memory(ass_renderer, NULL, m_defaultFont, ASS_FONTPROVIDER_NONE, NULL, 1);
   }
 
   void addFont(const std::string &name, int data, unsigned long data_size) {
@@ -502,7 +652,8 @@ public:
       return NULL;
     }
 
-    if (debug) time = emscripten_get_now();
+    if (debug)
+      time = emscripten_get_now();
     for (int i = 0; i < MAX_BLEND_STORAGES; i++) {
       m_blendParts[i].taken = false;
     }
@@ -760,80 +911,11 @@ static RenderResult getNext(const RenderResult &res) {
 }
 
 EMSCRIPTEN_BINDINGS(JASSUB) {
-  emscripten::class_<RenderResult>("RenderResult")
-    .property("x", &RenderResult::x)
-    .property("y", &RenderResult::y)
-    .property("w", &RenderResult::w)
-    .property("h", &RenderResult::h)
-    .property("next", &getNext)
-    .property("image", &RenderResult::image);
+  emscripten::class_<RenderResult>("RenderResult").property("x", &RenderResult::x).property("y", &RenderResult::y).property("w", &RenderResult::w).property("h", &RenderResult::h).property("next", &getNext).property("image", &RenderResult::image);
 
-  emscripten::class_<ASS_Style>("ASS_Style")
-    .property("Name", &getStyleName, &setStyleName)    
-    .property("FontName", &getFontName, &setFontName) 
-    .property("FontSize", &ASS_Style::FontSize)
-    .property("PrimaryColour", &ASS_Style::PrimaryColour)
-    .property("SecondaryColour", &ASS_Style::SecondaryColour)
-    .property("OutlineColour", &ASS_Style::OutlineColour)
-    .property("BackColour", &ASS_Style::BackColour)
-    .property("Bold", &ASS_Style::Bold)     
-    .property("Italic", &ASS_Style::Italic)   
-    .property("Underline", &ASS_Style::Underline) 
-    .property("StrikeOut", &ASS_Style::StrikeOut)
-    .property("ScaleX", &ASS_Style::ScaleX) 
-    .property("ScaleY", &ASS_Style::ScaleY) 
-    .property("Spacing", &ASS_Style::Spacing)
-    .property("Angle", &ASS_Style::Angle)
-    .property("BorderStyle", &ASS_Style::BorderStyle)
-    .property("Outline", &ASS_Style::Outline)
-    .property("Shadow", &ASS_Style::Shadow)
-    .property("Alignment", &ASS_Style::Alignment) 
-    .property("MarginL", &ASS_Style::MarginL)
-    .property("MarginR", &ASS_Style::MarginR)
-    .property("MarginV", &ASS_Style::MarginV)
-    .property("Encoding", &ASS_Style::Encoding)
-    .property("treat_fontname_as_pattern", &ASS_Style::treat_fontname_as_pattern) 
-    .property("Blur", &ASS_Style::Blur) 
-    .property("Justify", &ASS_Style::Justify);
+  emscripten::class_<ASS_Style>("ASS_Style").property("Name", &getStyleName, &setStyleName).property("FontName", &getFontName, &setFontName).property("FontSize", &ASS_Style::FontSize).property("PrimaryColour", &ASS_Style::PrimaryColour).property("SecondaryColour", &ASS_Style::SecondaryColour).property("OutlineColour", &ASS_Style::OutlineColour).property("BackColour", &ASS_Style::BackColour).property("Bold", &ASS_Style::Bold).property("Italic", &ASS_Style::Italic).property("Underline", &ASS_Style::Underline).property("StrikeOut", &ASS_Style::StrikeOut).property("ScaleX", &ASS_Style::ScaleX).property("ScaleY", &ASS_Style::ScaleY).property("Spacing", &ASS_Style::Spacing).property("Angle", &ASS_Style::Angle).property("BorderStyle", &ASS_Style::BorderStyle).property("Outline", &ASS_Style::Outline).property("Shadow", &ASS_Style::Shadow).property("Alignment", &ASS_Style::Alignment).property("MarginL", &ASS_Style::MarginL).property("MarginR", &ASS_Style::MarginR).property("MarginV", &ASS_Style::MarginV).property("Encoding", &ASS_Style::Encoding).property("treat_fontname_as_pattern", &ASS_Style::treat_fontname_as_pattern).property("Blur", &ASS_Style::Blur).property("Justify", &ASS_Style::Justify);
 
-  emscripten::class_<ASS_Event>("ASS_Event")
-    .property("Start", &getStart, &setStart)
-    .property("Duration", &getDuration, &setDuration)
-    .property("Name", &getEventName, &setEventName)
-    .property("Effect", &getEffect, &setEffect)
-    .property("Text", &getText, &setText)
-    .property("ReadOrder", &ASS_Event::ReadOrder)
-    .property("Layer", &ASS_Event::Layer)
-    .property("Style", &ASS_Event::Style)
-    .property("MarginL", &ASS_Event::MarginL)
-    .property("MarginR", &ASS_Event::MarginR)
-    .property("MarginV", &ASS_Event::MarginV);
+  emscripten::class_<ASS_Event>("ASS_Event").property("Start", &getStart, &setStart).property("Duration", &getDuration, &setDuration).property("Name", &getEventName, &setEventName).property("Effect", &getEffect, &setEffect).property("Text", &getText, &setText).property("ReadOrder", &ASS_Event::ReadOrder).property("Layer", &ASS_Event::Layer).property("Style", &ASS_Event::Style).property("MarginL", &ASS_Event::MarginL).property("MarginR", &ASS_Event::MarginR).property("MarginV", &ASS_Event::MarginV);
 
-  emscripten::class_<JASSUB>("JASSUB")
-    .constructor<int, int, std::string, bool>()
-    .function("setLogLevel", &JASSUB::setLogLevel)
-    .function("setDropAnimations", &JASSUB::setDropAnimations)
-    .function("createTrackMem", &JASSUB::createTrackMem)
-    .function("removeTrack", &JASSUB::removeTrack)
-    .function("resizeCanvas", &JASSUB::resizeCanvas)
-    .function("quitLibrary", &JASSUB::quitLibrary)
-    .function("addFont", &JASSUB::addFont)
-    .function("reloadFonts", &JASSUB::reloadFonts)
-    .function("setMargin", &JASSUB::setMargin)
-    .function("getEventCount", &JASSUB::getEventCount)
-    .function("allocEvent", &JASSUB::allocEvent)
-    .function("allocStyle", &JASSUB::allocStyle)
-    .function("removeEvent", &JASSUB::removeEvent)
-    .function("getStyleCount", &JASSUB::getStyleCount)
-    .function("removeStyle", &JASSUB::removeStyle)
-    .function("removeAllEvents", &JASSUB::removeAllEvents)
-    .function("setMemoryLimits", &JASSUB::setMemoryLimits)
-    .function("renderBlend", &JASSUB::renderBlend, emscripten::allow_raw_pointers())
-    .function("renderImage", &JASSUB::renderImage, emscripten::allow_raw_pointers())
-    .function("getEvent", &JASSUB::getEvent, emscripten::allow_raw_pointers())
-    .function("getStyle", &JASSUB::getStyle, emscripten::allow_raw_pointers())
-    .property("trackColorSpace", &JASSUB::trackColorSpace)
-    .property("changed", &JASSUB::changed)
-    .property("count", &JASSUB::count)
-    .property("time", &JASSUB::time);
+  emscripten::class_<JASSUB>("JASSUB").constructor<int, int, std::string, bool>().function("setLogLevel", &JASSUB::setLogLevel).function("setDropAnimations", &JASSUB::setDropAnimations).function("createTrackMem", &JASSUB::createTrackMem).function("removeTrack", &JASSUB::removeTrack).function("resizeCanvas", &JASSUB::resizeCanvas).function("quitLibrary", &JASSUB::quitLibrary).function("addFont", &JASSUB::addFont).function("reloadFonts", &JASSUB::reloadFonts).function("setMargin", &JASSUB::setMargin).function("getEventCount", &JASSUB::getEventCount).function("allocEvent", &JASSUB::allocEvent).function("allocStyle", &JASSUB::allocStyle).function("removeEvent", &JASSUB::removeEvent).function("getStyleCount", &JASSUB::getStyleCount).function("removeStyle", &JASSUB::removeStyle).function("removeAllEvents", &JASSUB::removeAllEvents).function("setMemoryLimits", &JASSUB::setMemoryLimits).function("renderBlend", &JASSUB::renderBlend, emscripten::allow_raw_pointers()).function("renderImage", &JASSUB::renderImage, emscripten::allow_raw_pointers()).function("getEvent", &JASSUB::getEvent, emscripten::allow_raw_pointers()).function("getStyle", &JASSUB::getStyle, emscripten::allow_raw_pointers()).property("trackColorSpace", &JASSUB::trackColorSpace).property("changed", &JASSUB::changed).property("count", &JASSUB::count).property("time", &JASSUB::time);
 }
