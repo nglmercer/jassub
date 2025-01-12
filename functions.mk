@@ -42,6 +42,7 @@ define CONFIGURE_AUTO
 		--enable-static \
 		--disable-shared \
 		--disable-debug \
+		--enable-pthreads \
     $(CONF_ARGS)
 endef
 

@@ -4,7 +4,7 @@
 BASE_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 DIST_DIR:=$(BASE_DIR)dist/libraries
 
-export CFLAGS = -O3 -flto -s USE_PTHREADS=0 -fno-rtti -fno-exceptions
+export CFLAGS = -O3 -flto -s USE_PTHREADS=1 -fno-rtti -fno-exceptions
 export CXXFLAGS = $(CFLAGS)
 export PKG_CONFIG_PATH = $(DIST_DIR)/lib/pkgconfig
 export EM_PKG_CONFIG_PATH = $(PKG_CONFIG_PATH)
@@ -35,7 +35,7 @@ ifeq (${MODERN},1)
 else
 	WORKER_NAME = jassub-worker
 	WORKER_ARGS = \
-		-s WASM=2 
+		-s WASM=1
 
 endif
 
@@ -159,6 +159,7 @@ $(DIST_DIR)/lib/libass.a: $(DIST_DIR)/lib/libfontconfig.a $(DIST_DIR)/lib/libhar
 	$(call CONFIGURE_AUTO,../../../lib/libass) \
 		--enable-large-tiles \
 		--enable-fontconfig \
+		--enable-pthreads \
 	&& \
 	$(JSO_MAKE) install
 
@@ -192,14 +193,8 @@ PERFORMANCE_ARGS = \
 
 # args for reducing size
 SIZE_ARGS = \
-		-s POLYFILL=0 \
-		-s FILESYSTEM=0 \
-		-s AUTO_JS_LIBRARIES=0 \
-		-s AUTO_NATIVE_LIBRARIES=0 \
-		-s HTML5_SUPPORT_DEFERRING_USER_SENSITIVE_REQUESTS=0 \
-		-s INCOMING_MODULE_JS_API="[]" \
-		-s USE_SDL=0 \
-		-s MINIMAL_RUNTIME=1 
+    -s POLYFILL=0 \
+		-s FILESYSTEM=0
 
 # args that are required for this to even work at all
 COMPAT_ARGS = \
@@ -207,10 +202,7 @@ COMPAT_ARGS = \
 		-s EXPORT_KEEPALIVE=1 \
 		-s EXPORTED_RUNTIME_METHODS="['getTempRet0', 'setTempRet0']" \
 		-s IMPORTED_MEMORY=1 \
-		-s MIN_CHROME_VERSION=27 \
-		-s MIN_SAFARI_VERSION=60005 \
-		-mbulk-memory \
-		--memory-init-file 0 
+		-mbulk-memory
 
 dist/js/$(WORKER_NAME).js: src/JASSUB.cpp src/worker.js src/pre-worker.js
 	mkdir -p dist/js
@@ -226,7 +218,8 @@ dist/js/$(WORKER_NAME).js: src/JASSUB.cpp src/worker.js src/pre-worker.js
 		-s MODULARIZE=1 \
 		-s EXPORT_ES6=1 \
 		-lembind \
-		-o $@
+		-o $@ \
+    -pthread
 
 dist/js/jassub.js: src/jassub.js
 	mkdir -p dist/js
