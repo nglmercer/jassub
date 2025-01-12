@@ -1,6 +1,6 @@
 /* eslint-disable no-extend-native */
 // @ts-ignore
-import WASM from 'wasm'
+import WASM from './jassub-worker.js'
 
 // polyfills for old or weird engines
 
@@ -327,7 +327,7 @@ const render = (time, force) => {
       for (let result = renderResult, i = 0; i < jassubObj.count; result = result.next, ++i) {
         const reassigned = { w: result.w, h: result.h, x: result.x, y: result.y }
         const pointer = result.image
-        const data = hasBitmapBug ? self.HEAPU8C.slice(pointer, pointer + reassigned.w * reassigned.h * 4) : self.HEAPU8C.subarray(pointer, pointer + reassigned.w * reassigned.h * 4)
+        const data = hasBitmapBug ? self.HEAPU8C.slice(pointer, pointer + reassigned.w * reassigned.h * 4) : self.HEAPU8C.slice(pointer, pointer + reassigned.w * reassigned.h * 4)
         promises.push(createImageBitmap(new ImageData(data, reassigned.w, reassigned.h)))
         images.push(reassigned)
       }
@@ -396,7 +396,7 @@ const paintImages = ({ times, images, buffers }) => {
         } else {
           bufferCanvas.width = image.w
           bufferCanvas.height = image.h
-          bufferCtx.putImageData(new ImageData(self.HEAPU8C.subarray(image.image, image.image + image.w * image.h * 4), image.w, image.h), 0, 0)
+          bufferCtx.putImageData(new ImageData(self.HEAPU8C.slice(image.image, image.image + image.w * image.h * 4), image.w, image.h), 0, 0)
           offCanvasCtx.drawImage(bufferCanvas, image.x, image.y)
         }
       }
@@ -567,6 +567,7 @@ self.init = data => {
 
     const fallbackFont = data.fallbackFont.toLowerCase()
     jassubObj = new Module.JASSUB(self.width, self.height, fallbackFont || null, debug)
+    console.log(jassubObj.setThreads(10))
 
     if (fallbackFont) findAvailableFonts(fallbackFont)
 

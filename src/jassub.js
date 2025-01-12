@@ -1,4 +1,4 @@
-import 'rvfc-polyfill'
+// import 'rvfc-polyfill'
 
 const webYCbCrMap = {
   bt709: 'BT709',
@@ -116,7 +116,7 @@ export default class JASSUB extends EventTarget {
       this._lastDemandTime = null
     }
 
-    this._worker = new Worker(options.workerUrl || 'jassub-worker.js')
+    this._worker = new Worker(options.workerUrl || 'jassub-worker.js', { type: 'module' })
     this._worker.onmessage = e => this._onmessage(e)
     this._worker.onerror = e => this._error(e)
 

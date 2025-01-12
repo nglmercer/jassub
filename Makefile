@@ -219,7 +219,8 @@ dist/js/$(WORKER_NAME).js: src/JASSUB.cpp src/worker.js src/pre-worker.js
 		-s EXPORT_ES6=1 \
 		-lembind \
 		-o $@ \
-    -pthread
+    -pthread \
+		-s PTHREAD_POOL_SIZE=8
 
 dist/js/jassub.js: src/jassub.js
 	mkdir -p dist/js

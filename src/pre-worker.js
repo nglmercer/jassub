@@ -1,9 +1,9 @@
 /* eslint-disable no-global-assign, no-unused-vars, prefer-const, no-extend-native */
 /* global out, err, updateMemoryViews, wasmMemory */
 
-function assert (c, m) {
-  if (!c) throw m
-}
+// function assert (c, m) {
+//   if (!c) throw m
+// }
 
 let asm = null
 

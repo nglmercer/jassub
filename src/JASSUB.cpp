@@ -360,6 +360,10 @@ public:
       track = NULL;
     }
   }
+
+  unsigned setThreads() {
+    return ass_set_threads(ass_renderer, 8);
+  }
   /* TRACK */
 
   /* CANVAS */
@@ -823,6 +827,7 @@ EMSCRIPTEN_BINDINGS(JASSUB) {
     .function("setMargin", &JASSUB::setMargin)
     .function("getEventCount", &JASSUB::getEventCount)
     .function("allocEvent", &JASSUB::allocEvent)
+    .function("setThreads", &JASSUB::setThreads)
     .function("allocStyle", &JASSUB::allocStyle)
     .function("removeEvent", &JASSUB::removeEvent)
     .function("getStyleCount", &JASSUB::getStyleCount)
