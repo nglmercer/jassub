@@ -717,10 +717,10 @@ export default class JASSUB extends EventTarget {
   _fixAlpha (uint8) {
     if (JASSUB._hasAlphaBug) {
       for (let j = 3; j < uint8.length; j += 4) {
-        uint8[j] = uint8[j] > 1 ? uint8[j] : 1
+        uint8[j] = uint8[j] !== 0 ? uint8[j] : 1;
       }
     }
-    return uint8
+    return uint8;
   }
 
   _ready () {

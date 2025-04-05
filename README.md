@@ -2,32 +2,32 @@
   JASSUB
 </h1>
 <p align="center">
-  JavaScript SSA/ASS Subtitle Renderer.
+  Renderizador de subtítulos SSA/ASS en JavaScript.
 </p>
-JASSUB is a JS wrapper for <a href="https://github.com/libass/libass">libass</a>, which renders <a href="https://en.wikipedia.org/wiki/SubStation_Alpha">SSA/ASS subtitles</a> directly in your browser. It uses Emscripten to compile libass' C++ code to WASM.
+JASSUB es un wrapper de JS para <a href="https://github.com/libass/libass">libass</a>, que renderiza <a href="https://en.wikipedia.org/wiki/SubStation_Alpha">subtítulos SSA/ASS</a> directamente en tu navegador. Utiliza Emscripten para compilar el código C++ de libass a WASM.
 
 <p align="center">
-  <a href="https://thaunknown.github.io/jassub/">Online Demos</a>
+  <a href="https://thaunknown.github.io/jassub/">Demos Online</a>
 </p>
 
-## Features
-- Supports most SSA/ASS features (everything libass supports)
-- Supports all OpenType, TrueType and WOFF fonts, as well as embedded fonts
-- Supports anamorphic videos [(on browsers which support it)](https://caniuse.com/mdn-api_htmlvideoelement_requestvideoframecallback)
-- Supports different video color spaces [(on browsers which support it)](https://caniuse.com/mdn-api_videocolorspace)
-- Capable of using local fonts [(on browsers which support it)](https://caniuse.com/mdn-api_window_querylocalfonts)
-- Works fast (all the heavy lifting is done by WebAssembly)
-- Is fully threaded (on browsers which support it, it's capable of working fully on a separate thread)
-- Is asynchronous (renders when available, not in order of execution)
-- Benefits from hardware acceleration (uses hardware accelerated canvas API's)
-- Doesn't manipulate the DOM to render subtitles
-- Easy to use - just connect it to video element
+## Características
+- Soporta la mayoría de las características de SSA/ASS (todo lo que soporta libass)
+- Soporta todas las fuentes OpenType, TrueType y WOFF, así como fuentes incrustadas
+- Soporta videos anamórficos [(en navegadores que lo soporten)](https://caniuse.com/mdn-api_htmlvideoelement_requestvideoframecallback)
+- Soporta diferentes espacios de color de video [(en navegadores que lo soporten)](https://caniuse.com/mdn-api_videocolorspace)
+- Capaz de usar fuentes locales [(en navegadores que lo soporten)](https://caniuse.com/mdn-api_window_querylocalfonts)
+- Funciona rápido (todo el trabajo pesado lo hace WebAssembly)
+- Es totalmente multi-hilo (en navegadores que lo soporten, es capaz de trabajar completamente en un hilo separado)
+- Es asíncrono (renderiza cuando está disponible, no en orden de ejecución)
+- Se beneficia de la aceleración por hardware (utiliza las API de canvas aceleradas por hardware)
+- No manipula el DOM para renderizar subtítulos
+- Fácil de usar - solo conéctalo a un elemento de video
 
-## Isn't this just the same thing as JavascriptSubtitlesOctopus?
-No. See <a href="https://thaunknown.github.io/jassub/explainer.html">this</a> comparison.
+## ¿No es esto lo mismo que JavascriptSubtitlesOctopus?
+No. Mira <a href="https://thaunknown.github.io/jassub/explainer.html">esta</a> comparación.
 
-## Usage
-By default all you need to do is copy the files from the `dist/` folder of the repository into the same folder as where your JS runs, then do:
+## Uso
+Por defecto, todo lo que necesitas hacer es copiar los archivos de la carpeta `dist/` del repositorio en la misma carpeta donde se ejecuta tu JS, luego haz:
 ```js
 import JASSUB from './jassub.es.js'
 
@@ -36,9 +36,9 @@ const renderer = new JASSUB({
   subUrl: './tracks/sub.ass'
 })
 ```
-`Note:` while the `dist/` folder includes a UMD dist it still uses modern syntax. If you want backwards compatibility with older browsers I recommend you run it tru babel.
+`Nota:` aunque la carpeta `dist/` incluye un dist UMD, todavía usa sintaxis moderna. Si quieres compatibilidad con navegadores antiguos, te recomiendo que lo ejecutes a través de babel.
 
-If you use a bundler like Vite, you can instead do:
+Si usas un bundler como Vite, puedes hacer en cambio:
 ```shell
 npm i jassub
 ```
@@ -51,12 +51,12 @@ import wasmUrl from 'jassub/dist/jassub-worker.wasm?url'
 const renderer = new JASSUB({
   video: document.querySelector('video'),
   subContent: subtitleString,
-  workerUrl, // you can also use: `new URL('jassub/dist/jassub-worker.js', import.meta.url)` instead of importing it as an url
+  workerUrl, // también puedes usar: `new URL('jassub/dist/jassub-worker.js', import.meta.url)` en lugar de importarlo como una url
   wasmUrl
 })
 ```
-## Using only with canvas
-You're also able to use it without any video. However, that requires you to set the time the subtitles should render at yourself:
+## Usando solo con canvas
+También puedes usarlo sin ningún video. Sin embargo, eso requiere que establezcas el tiempo en el que los subtítulos deben renderizarse:
 ```js
 import JASSUB from './jassub.es.js'
 
@@ -67,158 +67,158 @@ const renderer = new JASSUB({
 
 renderer.setCurrentTime(15)
 ```
-## Changing subtitles
-You're not limited to only display the subtitle file you referenced in your options. You're able to dynamically change subtitles on the fly. There's three methods that you can use for this specifically:
+## Cambiando subtítulos
+No estás limitado a solo mostrar el archivo de subtítulos que referenciaste en tus opciones. Puedes cambiar dinámicamente los subtítulos sobre la marcha. Hay tres métodos que puedes usar específicamente para esto:
 
-- `setTrackByUrl(url):` works the same as the `subUrl` option. It will set the subtitle to display by its URL.
-- `setTrack(content):` works the same as the `subContent` option. It will set the subtitle to dispaly by its content.
-- `freeTrack():` this simply removes the subtitles. You can use the two methods above to set a new subtitle file to be displayed.
+- `setTrackByUrl(url):` funciona igual que la opción `subUrl`. Establecerá el subtítulo a mostrar por su URL.
+- `setTrack(content):` funciona igual que la opción `subContent`. Establecerá el subtítulo a mostrar por su contenido.
+- `freeTrack():` esto simplemente elimina los subtítulos. Puedes usar los dos métodos anteriores para establecer un nuevo archivo de subtítulos para ser mostrado.
 ```js
 renderer.setTrackByUrl('/newsub.ass')
 ```
-## Cleaning up the object
-After you're finished with rendering the subtitles. You need to call the `destroy()` method to correctly destroy the object.
+## Limpiando el objeto
+Después de que hayas terminado de renderizar los subtítulos. Necesitas llamar al método `destroy()` para destruir correctamente el objeto.
 ```js
 const renderer = new JASSUB(options)
-// After you've finished using it...
+// Después de que hayas terminado de usarlo...
 renderer.destroy()
 ```
-## Options
-The default options are best, and automatically fallback to the next fastest options in line, when the API's they use are unsupported. You can however forcefully change this behavior by specifying options. These options are included in the JSDoc of the object, so if your editor supports JSDoc IntelliSense you will see these exact descriptions when calling methods and specifying options.
+## Opciones
+Las opciones por defecto son las mejores, y automáticamente recurren a las siguientes opciones más rápidas en línea, cuando las API que usan no son soportadas. Sin embargo, puedes cambiar forzosamente este comportamiento especificando opciones. Estas opciones están incluidas en el JSDoc del objeto, así que si tu editor soporta JSDoc IntelliSense verás estas descripciones exactas al llamar a los métodos y especificar las opciones.
 
-- `{Object} options` Settings object.
-- `{HTMLVideoElement} options.video` Video to use as target for rendering and event listeners. Optional if canvas is specified instead.
-- `{HTMLCanvasElement} options.canvas` { Optional } Canvas to use for manual handling. Not required if video is specified.
-- `{'js'|'wasm'} options.blendMode` { Optional = 'js' } Which image blending mode to use. WASM will perform better on lower end devices, JS will perform better if the device and browser supports hardware acceleration.
-- `{Boolean} options.asyncRender` { Optional = true } Whether or not to use async rendering, which offloads the CPU by creating image bitmaps on the GPU.
-- `{Boolean} options.offscreenRender` { Optional = true } Whether or not to render things fully on the worker, greatly reduces CPU usage.
-- `{Boolean} options.onDemandRender` { Optional = true } Whether or not to render subtitles as the video player renders frames, rather than predicting which frame the player is on using events.
-- `{Number} options.targetFps` { Optional = true } Target FPS to render subtitles at. Ignored when onDemandRender is enabled.
-- `{Number} options.timeOffset` { Optional = 0 } Subtitle time offset in seconds.
-- `{Boolean} options.debug` { Optional = false } Whether or not to print debug information.
-- `{Number} options.prescaleFactor` { Optional = 1.0 } Scale down (< 1.0) the subtitles canvas to improve performance at the expense of quality, or scale it up (> 1.0).
-- `{Number} options.prescaleHeightLimit` { Optional = 1080 } The height in pixels beyond which the subtitles canvas won't be prescaled.
-- `{Number} options.maxRenderHeight` { Optional = 0 } The maximum rendering height in pixels of the subtitles canvas. Beyond this subtitles will be upscaled by the browser.
-- `{Boolean} options.dropAllAnimations` { Optional = false } Attempt to discard all animated tags. Enabling this may severly mangle complex subtitles and should only be considered as an last ditch effort of uncertain success for hardware otherwise incapable of displaing anything. Will not reliably work with manually edited or allocated events.
-- `{Boolean} options.dropAllBlur` { Optional = false } The holy grail of performance gains. If heavy TS lags a lot, disabling this will make it ~x10 faster. This drops blur from all added subtitle tracks making most text and backgrounds look sharper, this is way less intrusive than dropping all animations, while still offering major performance gains.
-- `{String} options.workerUrl` { Optional = 'jassub-worker.js' } The URL of the worker.
-- `{String} options.wasmUrl` { Optional = 'jassub-worker.wasm' } The URL of the worker WASM.
-- `{String} options.legacyWasmUrl` { Optional = 'jassub-worker.wasm.js' } The URL of the legacy worker WASM. Only loaded if the browser doesn't support WASM.
-- `{String} options.modernWasmUrl` { Optional } The URL of the modern worker WASM. This includes faster ASM instructions, but is only supported by newer browsers, disabled if the URL isn't defined.
-- `{String} [options.subUrl=options.subContent]` The URL of the subtitle file to play.
-- `{String} [options.subContent=options.subUrl]` The content of the subtitle file to play.
-- `{String[]|Uint8Array[]} options.fonts` { Optional } An array of links or Uint8Arrays to the fonts used in the subtitle. If Uint8Array is used the array is copied, not referenced. This forces all the fonts in this array to be loaded by the renderer, regardless of if they are used.
-- `{Object} options.availableFonts` { Optional = {'liberation sans': './default.woff2'}} Object with all available fonts - Key is font family in lower case, value is link or Uint8Array: { arial: '/font1.ttf' }. These fonts are selectively loaded if detected as used in the current subtitle track.
-- `{String} options.fallbackFont` { Optional = 'liberation sans' } The font family key of the fallback font in availableFonts to use if the other font for the style is missing special glyphs or unicode.
-- `{Boolean} options.useLocalFonts` { Optional = false } If the Local Font Access API is enabled [chrome://flags/#font-access], the library will query for permissions to use local fonts and use them if any are missing. The permission can be queried beforehand using navigator.permissions.request({ name: 'local-fonts' }).
-- `{Number} options.libassMemoryLimit` { Optional } libass bitmap cache memory limit in MiB (approximate).
-- `{Number} options.libassGlyphLimit` { Optional } libass glyph cache memory limit in MiB (approximate).
+- `{Object} options` Objeto de configuración.
+- `{HTMLVideoElement} options.video` Video para usar como objetivo para renderizar y escuchar eventos. Opcional si se especifica canvas en su lugar.
+- `{HTMLCanvasElement} options.canvas` { Opcional } Canvas para usar para el manejo manual. No requerido si se especifica video.
+- `{'js'|'wasm'} options.blendMode` { Opcional = 'js' } Qué modo de mezcla de imagen usar. WASM funcionará mejor en dispositivos de gama baja, JS funcionará mejor si el dispositivo y el navegador soportan la aceleración por hardware.
+- `{Boolean} options.asyncRender` { Opcional = true } Si usar o no renderizado asíncrono, que descarga la CPU creando bitmaps de imagen en la GPU.
+- `{Boolean} options.offscreenRender` { Opcional = true } Si renderizar o no las cosas completamente en el worker, reduce en gran medida el uso de la CPU.
+- `{Boolean} options.onDemandRender` { Opcional = true } Si renderizar o no los subtítulos a medida que el reproductor de video renderiza los fotogramas, en lugar de predecir en qué fotograma está el reproductor usando eventos.
+- `{Number} options.targetFps` { Opcional = true } FPS objetivo para renderizar los subtítulos. Ignorado cuando onDemandRender está habilitado.
+- `{Number} options.timeOffset` { Opcional = 0 } Desplazamiento de tiempo del subtítulo en segundos.
+- `{Boolean} options.debug` { Opcional = false } Si imprimir o no información de depuración.
+- `{Number} options.prescaleFactor` { Opcional = 1.0 } Reduce la escala (< 1.0) del canvas de subtítulos para mejorar el rendimiento a expensas de la calidad, o aumenta la escala (> 1.0).
+- `{Number} options.prescaleHeightLimit` { Opcional = 1080 } La altura en píxeles más allá de la cual el canvas de subtítulos no se reducirá.
+- `{Number} options.maxRenderHeight` { Opcional = 0 } La altura máxima de renderizado en píxeles del canvas de subtítulos. Más allá de esto, los subtítulos serán escalados por el navegador.
+- `{Boolean} options.dropAllAnimations` { Opcional = false } Intenta descartar todas las etiquetas animadas. Habilitar esto puede destrozar severamente los subtítulos complejos y solo debe considerarse como un último esfuerzo de éxito incierto para hardware que de otra manera es incapaz de mostrar nada. No funcionará de manera confiable con eventos editados o asignados manualmente.
+- `{Boolean} options.dropAllBlur` { Opcional = false } El santo grial de las ganancias de rendimiento. Si un TS pesado se retrasa mucho, deshabilitar esto lo hará ~x10 más rápido. Esto elimina el desenfoque de todas las pistas de subtítulos añadidas, haciendo que la mayoría del texto y los fondos se vean más nítidos, esto es mucho menos intrusivo que eliminar todas las animaciones, al tiempo que ofrece importantes ganancias de rendimiento.
+- `{String} options.workerUrl` { Opcional = 'jassub-worker.js' } La URL del worker.
+- `{String} options.wasmUrl` { Opcional = 'jassub-worker.wasm' } La URL del worker WASM.
+- `{String} options.legacyWasmUrl` { Opcional = 'jassub-worker.wasm.js' } La URL del worker WASM legado. Solo se carga si el navegador no soporta WASM.
+- `{String} options.modernWasmUrl` { Opcional } La URL del worker WASM moderno. Esto incluye instrucciones ASM más rápidas, pero solo es soportado por navegadores más nuevos, deshabilitado si la URL no está definida.
+- `{String} [options.subUrl=options.subContent]` La URL del archivo de subtítulos para reproducir.
+- `{String} [options.subContent=options.subUrl]` El contenido del archivo de subtítulos para reproducir.
+- `{String[]|Uint8Array[]} options.fonts` { Opcional } Un array de enlaces o Uint8Arrays a las fuentes usadas en el subtítulo. Si se usa Uint8Array, el array se copia, no se referencia. Esto fuerza a que todas las fuentes en este array sean cargadas por el renderizador, independientemente de si se usan o no.
+- `{Object} options.availableFonts` { Opcional = {'liberation sans': './default.woff2'}} Objeto con todas las fuentes disponibles - La clave es la familia de fuentes en minúsculas, el valor es el enlace o Uint8Array: { arial: '/font1.ttf' }. Estas fuentes se cargan selectivamente si se detectan como usadas en la pista de subtítulos actual.
+- `{String} options.fallbackFont` { Opcional = 'liberation sans' } La clave de la familia de fuentes de la fuente de respaldo en availableFonts para usar si la otra fuente para el estilo carece de glifos especiales o unicode.
+- `{Boolean} options.useLocalFonts` { Opcional = false } Si la API de Acceso a Fuentes Locales está habilitada [chrome://flags/#font-access], la biblioteca consultará los permisos para usar fuentes locales y las usará si falta alguna. El permiso se puede consultar de antemano usando navigator.permissions.request({ name: 'local-fonts' }).
+- `{Number} options.libassMemoryLimit` { Opcional } Límite de memoria de la caché de bitmaps de libass en MiB (aproximado).
+- `{Number} options.libassGlyphLimit` { Opcional } Límite de memoria de la caché de glifos de libass en MiB (aproximado).
 
-## Methods and properties
-This library has a lot of methods and properties, however many aren't made for manual use or have no effect when changing, those are usually prefixed with `_`. Most of these never need to be called by the user.
+## Métodos y propiedades
+Esta biblioteca tiene muchos métodos y propiedades, sin embargo, muchos no están hechos para uso manual o no tienen efecto al cambiar, esos generalmente tienen el prefijo `_`. La mayoría de estos nunca necesitan ser llamados por el usuario.
 
-### List of properties:
+### Lista de propiedades:
   - `debug` - -||-
   - `prescaleFactor` - -||-
   - `prescaleHeightLimit` - -||-
   - `maxRenderHeight` - -||-
-  - `busy` - Boolean which specifies if the renderer is currently busy. 
+  - `busy` - Booleano que especifica si el renderizador está actualmente ocupado. 
   - `timeOffset` - -||-
-### List of methods:
-- `resize(width = 0, height = 0, top = 0, left = 0, force)` - Resize the canvas to given parameters. Auto-generated if values are ommited.
+### Lista de métodos:
+- `resize(width = 0, height = 0, top = 0, left = 0, force)` - Redimensiona el canvas a los parámetros dados. Autogenerado si los valores son omitidos.
   - {Number} [width=0]
   - {Number} [height=0]
   - {Number} [top=0]
   - {Number} [left=0]
   - {Boolean} force
-- `setVideo(video)` - Change the video to use as target for event listeners.
+- `setVideo(video)` - Cambia el video para usar como objetivo para los listeners de eventos.
   - {HTMLVideoElement} video
-- `setTrackByUrl(url)` - Overwrites the current subtitle content.
-  - {String} url URL to load subtitles from.
-- `setTrack(content)` - Overwrites the current subtitle content.
-  - {String} content Content of the ASS file.
-- `freeTrack()` - Free currently used subtitle track.
-- `setIsPaused(isPaused)` - Sets the playback state of the media.
-  - {Boolean} isPaused Pause/Play subtitle playback.
-- `setRate(rate)` - Sets the playback rate of the media [speed multiplier].
-  - {Number} rate Playback rate.
-- `setCurrentTime(isPaused, currentTime, rate)` - Sets the current time, playback state and rate of the subtitles.
-  - {Boolean} [isPaused] Pause/Play subtitle playback.
-  - {Number} [currentTime] Time in seconds.
-  - {Number} [rate] Playback rate.
-- `destroy(err)` - Destroy the object, worker, listeners and all data.
-  - {String} [err] Error to throw when destroying.
-- `sendMessage(target, data = {}, transferable)` - Send data and execute function in the worker.
-  - {String} target Target function.
-  - {Object} [data] Data for function.
-  - {Transferable[]} [transferable] Array of transferables.
-- `createEvent(event)` - Create a new ASS event directly.
+- `setTrackByUrl(url)` - Sobreescribe el contenido actual del subtítulo.
+  - {String} url URL para cargar los subtítulos desde.
+- `setTrack(content)` - Sobreescribe el contenido actual del subtítulo.
+  - {String} content Contenido del archivo ASS.
+- `freeTrack()` - Libera la pista de subtítulos actualmente en uso.
+- `setIsPaused(isPaused)` - Establece el estado de reproducción del medio.
+  - {Boolean} isPaused Pausa/Reproduce la reproducción de subtítulos.
+- `setRate(rate)` - Establece la velocidad de reproducción del medio [multiplicador de velocidad].
+  - {Number} rate Velocidad de reproducción.
+- `setCurrentTime(isPaused, currentTime, rate)` - Establece el tiempo actual, el estado de reproducción y la velocidad de los subtítulos.
+  - {Boolean} [isPaused] Pausa/Reproduce la reproducción de subtítulos.
+  - {Number} [currentTime] Tiempo en segundos.
+  - {Number} [rate] Velocidad de reproducción.
+- `destroy(err)` - Destruye el objeto, el worker, los listeners y todos los datos.
+  - {String} [err] Error para lanzar al destruir.
+- `sendMessage(target, data = {}, transferable)` - Envía datos y ejecuta la función en el worker.
+  - {String} target Función objetivo.
+  - {Object} [data] Datos para la función.
+  - {Transferable[]} [transferable] Array de transferibles.
+- `createEvent(event)` - Crea un nuevo evento ASS directamente.
   - {ASS_Event} event
-- `setEvent(event, index)` - Overwrite the data of the event with the specified index.
+- `setEvent(event, index)` - Sobreescribe los datos del evento con el índice especificado.
   - {ASS_Event} event
   - {Number} index
-- `removeEvent(index)` - Remove the event with the specified index.
+- `removeEvent(index)` - Elimina el evento con el índice especificado.
   - {Number} index
-- `getEvents(callback)` - Get all ASS events.
-  - {function(Error|null, ASS_Event)} callback Function to callback when worker returns the events.
-- `createStyle(style)` - Create a new ASS style directly.
+- `getEvents(callback)` - Obtiene todos los eventos ASS.
+  - {function(Error|null, ASS_Event)} callback Función para llamar cuando el worker devuelve los eventos.
+- `createStyle(style)` - Crea un nuevo estilo ASS directamente.
   - {ASS_Style} event
-- `setStyle (event, index)` - Overwrite the data of the style with the specified index.
+- `setStyle (event, index)` - Sobreescribe los datos del estilo con el índice especificado.
   - {ASS_Style} event
   - {Number} index
-- `removeStyle (index)` - Remove the style with the specified index.
+- `removeStyle (index)` - Elimina el estilo con el índice especificado.
   - {Number} index
-- `getStyles (callback)` - Get all ASS styles.
-  - {function(Error|null, ASS_Style)} callback Function to callback when worker returns the styles.
-- `addfont (font)` - Adds a font to the renderer.
-  - {String|Uint8Array} font Font to add.
+- `getStyles (callback)` - Obtiene todos los estilos ASS.
+  - {function(Error|null, ASS_Style)} callback Función para llamar cuando el worker devuelve los estilos.
+- `addfont (font)` - Añade una fuente al renderizador.
+  - {String|Uint8Array} font Fuente para añadir.
 
-### ASS_Event object properties
-- `{Number} Start` - Start Time of the Event, in 0:00:00:00 format ie. Hrs:Mins:Secs:hundredths. This is the time elapsed during script playback at which the text will appear onscreen. Note that there is a single digit for the hours!
-- `{Number} Duration` - End Time of the Event, in 0:00:00:00 format ie. Hrs:Mins:Secs:hundredths. This is the time elapsed during script playback at which the text will disappear offscreen. Note that there is a single digit for the hours!
-- `{String} Style` - Style name. If it is "Default", then your own *Default style will be subtituted.
-- `{String} Name` - Character name. This is the name of the character who speaks the dialogue. It is for information only, to make the script is easier to follow when editing/timing.
-- `{Number} MarginL` - 4-figure Left Margin override. The values are in pixels. All zeroes means the default margins defined by the style are used.
-- `{Number} MarginR` - 4-figure Right Margin override. The values are in pixels. All zeroes means the default margins defined by the style are used.
-- `{Number} MarginV` - 4-figure Bottom Margin override. The values are in pixels. All zeroes means the default margins defined by the style are used.
-- `{String} Effect` - Transition Effect. This is either empty, or contains information for one of the three transition effects implemented in SSA v4.x
-- `{String} Text` - Subtitle Text. This is the actual text which will be displayed as a subtitle onscreen. Everything after the 9th comma is treated as the subtitle text, so it can include commas.
-- `{Number} ReadOrder` - Number in order of which to read this event.
-- `{Number} Layer` - Z-index overlap in which to render this event.
-- `{Number} _index` - (Internal) index of the event.
+### Propiedades del objeto ASS_Event
+- `{Number} Start` - Tiempo de inicio del evento, en formato 0:00:00:00, es decir, Hrs:Mins:Secs:centésimas. Este es el tiempo transcurrido durante la reproducción del script en el que el texto aparecerá en pantalla. ¡Ten en cuenta que hay un solo dígito para las horas!
+- `{Number} Duration` - Tiempo de finalización del evento, en formato 0:00:00:00, es decir, Hrs:Mins:Secs:centésimas. Este es el tiempo transcurrido durante la reproducción del script en el que el texto desaparecerá de la pantalla. ¡Ten en cuenta que hay un solo dígito para las horas!
+- `{String} Style` - Nombre del estilo. Si es "Default", entonces tu propio estilo *Default será sustituido.
+- `{String} Name` - Nombre del personaje. Este es el nombre del personaje que dice el diálogo. Es solo para información, para que el script sea más fácil de seguir al editar/sincronizar.
+- `{Number} MarginL` - Margen izquierdo de 4 dígitos. Los valores están en píxeles. Todos los ceros significan que se utilizan los márgenes predeterminados definidos por el estilo.
+- `{Number} MarginR` - Margen derecho de 4 dígitos. Los valores están en píxeles. Todos los ceros significan que se utilizan los márgenes predeterminados definidos por el estilo.
+- `{Number} MarginV` - Margen inferior de 4 dígitos. Los valores están en píxeles. Todos los ceros significan que se utilizan los márgenes predeterminados definidos por el estilo.
+- `{String} Effect` - Efecto de transición. Esto está vacío o contiene información para uno de los tres efectos de transición implementados en SSA v4.x
+- `{String} Text` - Texto del subtítulo. Este es el texto real que se mostrará como un subtítulo en la pantalla. Todo después de la novena coma se trata como el texto del subtítulo, por lo que puede incluir comas.
+- `{Number} ReadOrder` - Número en orden de lectura de este evento.
+- `{Number} Layer` - Índice Z de superposición en el que se renderizará este evento.
+- `{Number} _index` - (Interno) índice del evento.
 
-### ASS_Style object properties 
-  - `{String} Name` The name of the Style. Case sensitive. Cannot include commas.
-  - `{String} FontName` The fontname as used by Windows. Case-sensitive.
-  - `{Number} FontSize` Font size.
-  - `{Number} PrimaryColour` A long integer BGR (blue-green-red)  value. ie. the byte order in the hexadecimal equivelent of this number is BBGGRR
-  - `{Number} SecondaryColour` A long integer BGR (blue-green-red)  value. ie. the byte order in the hexadecimal equivelent of this number is BBGGRR
-  - `{Number} OutlineColour` A long integer BGR (blue-green-red)  value. ie. the byte order in the hexadecimal equivelent of this number is BBGGRR
-  - `{Number} BackColour` This is the colour of the subtitle outline or shadow, if these are used. A long integer BGR (blue-green-red)  value. ie. the byte order in the hexadecimal equivelent of this number is BBGGRR.
-  - `{Number} Bold` This defines whether text is bold (true) or not (false). -1 is True, 0 is False. This is independant of the Italic attribute - you can have have text which is both bold and italic.
-  - `{Number} Italic`  Italic. This defines whether text is italic (true) or not (false). -1 is True, 0 is False. This is independant of the bold attribute - you can have have text which is both bold and italic.
-  - `{Number} Underline` -1 or 0
-  - `{Number} StrikeOut` -1 or 0
-  - `{Number} ScaleX` Modifies the width of the font. [percent]
-  - `{Number} ScaleY` Modifies the height of the font. [percent]
-  - `{Number} Spacing` Extra space between characters. [pixels]
-  - `{Number} Angle` The origin of the rotation is defined by the alignment. Can be a floating point number. [degrees]
-  - `{Number} BorderStyle` 1=Outline + drop shadow, 3=Opaque box
-  - `{Number} Outline` If BorderStyle is 1,  then this specifies the width of the outline around the text, in pixels. Values may be 0, 1, 2, 3 or 4.
-  - `{Number} Shadow` If BorderStyle is 1,  then this specifies the depth of the drop shadow behind the text, in pixels. Values may be 0, 1, 2, 3 or 4. Drop shadow is always used in addition to an outline - SSA will force an outline of 1 pixel if no outline width is given.
-  - `{Number} Alignment` This sets how text is "justified" within the Left/Right onscreen margins, and also the vertical placing. Values may be 1=Left, 2=Centered, 3=Right. Add 4 to the value for a "Toptitle". Add 8 to the value for a "Midtitle". eg. 5 = left-justified toptitle
-  - `{Number} MarginL` This defines the Left Margin in pixels. It is the distance from the left-hand edge of the screen.The three onscreen margins (MarginL, MarginR, MarginV) define areas in which the subtitle text will be displayed.
-  - `{Number} MarginR` This defines the Right Margin in pixels. It is the distance from the right-hand edge of the screen. The three onscreen margins (MarginL, MarginR, MarginV) define areas in which the subtitle text will be displayed.
-  - `{Number} MarginV` This defines the vertical Left Margin in pixels. For a subtitle, it is the distance from the bottom of the screen. For a toptitle, it is the distance from the top of the screen. For a midtitle, the value is ignored - the text will be vertically centred.
-  - `{Number} Encoding` This specifies the font character set or encoding and on multi-lingual Windows installations it provides access to characters used in multiple than one languages. It is usually 0 (zero) for English (Western, ANSI) Windows.
+### Propiedades del objeto ASS_Style
+  - `{String} Name` El nombre del estilo. Distingue entre mayúsculas y minúsculas. No puede incluir comas.
+  - `{String} FontName` El nombre de la fuente tal como lo usa Windows. Distingue entre mayúsculas y minúsculas.
+  - `{Number} FontSize` Tamaño de la fuente.
+  - `{Number} PrimaryColour` Un entero largo BGR (azul-verde-rojo). Es decir, el orden de los bytes en el equivalente hexadecimal de este número es BBGGRR
+  - `{Number} SecondaryColour` Un entero largo BGR (azul-verde-rojo). Es decir, el orden de los bytes en el equivalente hexadecimal de este número es BBGGRR
+  - `{Number} OutlineColour` Un entero largo BGR (azul-verde-rojo). Es decir, el orden de los bytes en el equivalente hexadecimal de este número es BBGGRR
+  - `{Number} BackColour` Este es el color del contorno o la sombra del subtítulo, si se utilizan. Un entero largo BGR (azul-verde-rojo). Es decir, el orden de los bytes en el equivalente hexadecimal de este número es BBGGRR.
+  - `{Number} Bold` Esto define si el texto está en negrita (verdadero) o no (falso). -1 es Verdadero, 0 es Falso. Esto es independiente del atributo Italic: puedes tener texto que sea tanto negrita como cursiva.
+  - `{Number} Italic` Cursiva. Esto define si el texto está en cursiva (verdadero) o no (falso). -1 es Verdadero, 0 es Falso. Esto es independiente del atributo negrita: puedes tener texto que sea tanto negrita como cursiva.
+  - `{Number} Underline` -1 o 0
+  - `{Number} StrikeOut` -1 o 0
+  - `{Number} ScaleX` Modifica el ancho de la fuente. [porcentaje]
+  - `{Number} ScaleY` Modifica la altura de la fuente. [porcentaje]
+  - `{Number} Spacing` Espacio extra entre caracteres. [píxeles]
+  - `{Number} Angle` El origen de la rotación está definido por la alineación. Puede ser un número de punto flotante. [grados]
+  - `{Number} BorderStyle` 1=Contorno + sombra paralela, 3=Caja opaca
+  - `{Number} Outline` Si BorderStyle es 1, entonces esto especifica el ancho del contorno alrededor del texto, en píxeles. Los valores pueden ser 0, 1, 2, 3 o 4.
+  - `{Number} Shadow` Si BorderStyle es 1, entonces esto especifica la profundidad de la sombra paralela detrás del texto, en píxeles. Los valores pueden ser 0, 1, 2, 3 o 4. La sombra paralela siempre se usa además de un contorno: SSA forzará un contorno de 1 píxel si no se da un ancho de contorno.
+  - `{Number} Alignment` Esto establece cómo se "justifica" el texto dentro de los márgenes izquierdo/derecho en pantalla, y también la colocación vertical. Los valores pueden ser 1=Izquierda, 2=Centrado, 3=Derecha. Añade 4 al valor para un "Toptitle". Añade 8 al valor para un "Midtitle". ej. 5 = título superior justificado a la izquierda
+  - `{Number} MarginL` Esto define el margen izquierdo en píxeles. Es la distancia desde el borde izquierdo de la pantalla. Los tres márgenes en pantalla (MarginL, MarginR, MarginV) definen áreas en las que se mostrará el texto del subtítulo.
+  - `{Number} MarginR` Esto define el margen derecho en píxeles. Es la distancia desde el borde derecho de la pantalla. Los tres márgenes en pantalla (MarginL, MarginR, MarginV) definen áreas en las que se mostrará el texto del subtítulo.
+  - `{Number} MarginV` Esto define el margen vertical izquierdo en píxeles. Para un subtítulo, es la distancia desde la parte inferior de la pantalla. Para un título superior, es la distancia desde la parte superior de la pantalla. Para un título medio, el valor se ignora: el texto se centrará verticalmente.
+  - `{Number} Encoding` Esto especifica el conjunto de caracteres o la codificación de la fuente y, en las instalaciones de Windows en varios idiomas, proporciona acceso a los caracteres utilizados en varios idiomas. Suele ser 0 (cero) para Windows en inglés (occidental, ANSI).
   - `{Number} treat_fontname_as_pattern`
   - `{Number} Blur`
   - `{Number} Justify`
 
-# How to build?
-## Dependencies
+# ¿Cómo construir?
+## Dependencias
 - git
-- emscripten (Configure the enviroment)
+- emscripten (Configurar el entorno)
 - make
 - python3
 - cmake
@@ -227,25 +227,25 @@ This library has a lot of methods and properties, however many aren't made for m
 - libtool
 - autotools (autoconf, automake, autopoint)
 - gettext
-- ragel - Required by Harfbuzz
-- itstool - Required by Fontconfig
-- gperf - Required by Fontconfig
+- ragel - Requerido por Harfbuzz
+- itstool - Requerido por Fontconfig
+- gperf - Requerido por Fontconfig
 - licensecheck
 
-## Get the Source
-Run git clone --recursive https://github.com/ThaUnknown/jassub.git
+## Obtener el código fuente
+Ejecuta git clone --recursive https://github.com/ThaUnknown/jassub.git
 
-## Build inside a Container
+## Construir dentro de un contenedor
 ### Docker
-1. Install Docker
+1. Instala Docker
 2. ./run-docker-build.sh
-3. Artifacts are in /dist/js
+3. Los artefactos están en /dist/js
 ### Buildah
-1. Install Buildah and a suitable backend for buildah run like crun or runc
+1. Instala Buildah y un backend adecuado para buildah run como crun o runc
 2. ./run-buildah-build.sh
-3. Artifacts are in /dist/js
-## Build without Containers
-1. Install the dependency packages listed above
+3. Los artefactos están en /dist/js
+## Construir sin contenedores
+1. Instala los paquetes de dependencias listados arriba
 2. make
-    - If on macOS with libtool from brew, LIBTOOLIZE=glibtoolize make
-3. Artifacts are in /dist/js
+    - Si estás en macOS con libtool de brew, LIBTOOLIZE=glibtoolize make
+3. Los artefactos están en /dist/js
